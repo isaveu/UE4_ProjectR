@@ -22,3 +22,8 @@ void URCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 
 }
+
+bool URCharacterAnimInstance::IsJumpEndStopPlaying() const
+{
+	return bIsPlayingJumpStop;
+}

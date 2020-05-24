@@ -8,6 +8,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Character/RCharacterAnimInstance.h"
 
 // Sets default values
 ARCharacter::ARCharacter()
@@ -17,6 +18,7 @@ ARCharacter::ARCharacter()
 	WalkSpeed = 300.f;
 	SprintSpeed = 800.f;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->bUsePawnControlRotation = true;
@@ -33,6 +35,12 @@ void ARCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// Caching Anim Instance
+	auto NewAnim = Cast<URCharacterAnimInstance>(GetMesh()->GetAnimInstance());
+	if (::IsValid(NewAnim))
+	{
+		CharacterAnim = NewAnim;
+	}
 }
 
 // Called every frame
@@ -47,10 +55,15 @@ void ARCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	// Axis Mapping
 	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &ARCharacter::MoveForward);
 	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &ARCharacter::MoveRight);
 	PlayerInputComponent->BindAxis(TEXT("Turn"), this, &ARCharacter::Turn);
 	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &ARCharacter::LookUp);
+
+	// Action Mapping
+	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ARCharacter::StartJump);
+	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Released, this, &ARCharacter::EndJump);
 
 }
 
@@ -58,8 +71,26 @@ void ARCharacter::MoveForward(float AxisValue)
 {
 	if (AxisValue == 0.f)
 	{
+		if (CharacterAnim.IsValid())
+		{
+			UE_LOG(LogClass, Warning, TEXT("Toward false!!"));
+			CharacterAnim->bInputMoveToward = false;
+		}
 		return;
 	}
+
+	if (CharacterAnim.IsValid())
+	{
+		if (CharacterAnim->IsJumpEndStopPlaying())
+		{
+			return;
+		}
+		else
+		{
+			CharacterAnim->bInputMoveToward = true;
+		}
+	}
+
 
 	const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
 	const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
@@ -70,7 +101,23 @@ void ARCharacter::MoveRight(float AxisValue)
 {
 	if (AxisValue == 0.f)
 	{
+		if (CharacterAnim.IsValid())
+		{
+			CharacterAnim->bInputMoveRight = false;
+		}
 		return;
+	}
+
+	if (CharacterAnim.IsValid())
+	{
+		if (CharacterAnim->IsJumpEndStopPlaying())
+		{
+			return;
+		}
+		else
+		{
+			CharacterAnim->bInputMoveRight = true;
+		}
 	}
 
 	const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
@@ -96,5 +143,15 @@ void ARCharacter::LookUp(float AxisValue)
 	}
 
 	AddControllerPitchInput(AxisValue);
+}
+
+void ARCharacter::StartJump()
+{
+	Jump();
+}
+
+void ARCharacter::EndJump()
+{
+	StopJumping();
 }
 

@@ -28,11 +28,16 @@ public:
 
 
 private:
+	// Axis Mapping
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
 	void Turn(float AxisValue);
 	void LookUp(float AxisValue);
 	
+	// Action Mapping
+	void StartJump();
+	void EndJump();
+
 	
 private:
 	UPROPERTY(EditAnywhere, Category = Character)
@@ -46,5 +51,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = Component)
 	class UCameraComponent* MainCamera;
+
+	TWeakObjectPtr<class URCharacterAnimInstance> CharacterAnim;
 
 };

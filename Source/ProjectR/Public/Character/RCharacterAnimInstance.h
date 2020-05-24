@@ -22,18 +22,27 @@ public:
 	// for the bulk of the work to be done in NativeUpdateAnimation.
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
-private:
-	//UPROPERTY()
-	//TWeakObjectPtr<class ARCharacter> OwnerCharacter;
-	
+public:
+	bool IsJumpEndStopPlaying() const;
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character)
+	bool bInputMoveToward = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character)
+	bool bInputMoveRight = false;
+
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category= Character, Meta=(AllowPrivateAccess =true))
 	float CharacterSpeedSq = 0.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
 	bool bSprinting = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
 	bool bIsFalling = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Character, Meta = (AllowPrivateAccess = true))
+	bool bIsPlayingJumpStop = false;
 
 };
