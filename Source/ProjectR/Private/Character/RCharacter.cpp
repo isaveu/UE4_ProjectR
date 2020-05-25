@@ -15,6 +15,8 @@ ARCharacter::ARCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	bSprinting = false;
 	WalkSpeed = 300.f;
 	SprintSpeed = 800.f;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
@@ -64,6 +66,8 @@ void ARCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	// Action Mapping
 	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ARCharacter::StartJump);
 	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Released, this, &ARCharacter::EndJump);
+	PlayerInputComponent->BindAction(TEXT("Sprint"), EInputEvent::IE_Pressed, this, &ARCharacter::StartSprint);
+	PlayerInputComponent->BindAction(TEXT("Sprint"), EInputEvent::IE_Released, this, &ARCharacter::StopSprint);
 
 }
 
@@ -73,7 +77,6 @@ void ARCharacter::MoveForward(float AxisValue)
 	{
 		if (CharacterAnim.IsValid())
 		{
-			UE_LOG(LogClass, Warning, TEXT("Toward false!!"));
 			CharacterAnim->bInputMoveToward = false;
 		}
 		return;
@@ -81,11 +84,11 @@ void ARCharacter::MoveForward(float AxisValue)
 
 	if (CharacterAnim.IsValid())
 	{
-		if (CharacterAnim->IsJumpEndStopPlaying())
-		{
-			return;
-		}
-		else
+		//if (CharacterAnim->IsJumpEndStopPlaying())
+		//{
+		//	return;
+		//}
+		//else
 		{
 			CharacterAnim->bInputMoveToward = true;
 		}
@@ -110,11 +113,11 @@ void ARCharacter::MoveRight(float AxisValue)
 
 	if (CharacterAnim.IsValid())
 	{
-		if (CharacterAnim->IsJumpEndStopPlaying())
-		{
-			return;
-		}
-		else
+		//if (CharacterAnim->IsJumpEndStopPlaying())
+		//{
+		//	return;
+		//}
+		//else
 		{
 			CharacterAnim->bInputMoveRight = true;
 		}
@@ -153,5 +156,29 @@ void ARCharacter::StartJump()
 void ARCharacter::EndJump()
 {
 	StopJumping();
+}
+
+void ARCharacter::StartSprint()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (Movement && Movement->IsFalling())
+	{
+		return;
+	}
+
+	Movement->MaxWalkSpeed = SprintSpeed;
+
+}
+
+void ARCharacter::StopSprint()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!::IsValid(Movement))
+	{
+		return;
+	}
+
+	Movement->MaxWalkSpeed = WalkSpeed;
+
 }
 

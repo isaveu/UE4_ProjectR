@@ -23,7 +23,7 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 public:
-	bool IsJumpEndStopPlaying() const;
+	//bool IsJumpEndStopPlaying() const;
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character)
@@ -37,12 +37,16 @@ private:
 	float CharacterSpeedSq = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
-	bool bSprinting = false;
+	bool bIsSprinting = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
 	bool bIsFalling = false;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Character, Meta = (AllowPrivateAccess = true))
-	bool bIsPlayingJumpStop = false;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Character, Meta = (AllowPrivateAccess = true))
+	//bool bIsPlayingJumpStop = false;
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = Anim)
+	TMap<FString, UAnimMontage*> AnimMontageTable;
 
 };

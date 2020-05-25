@@ -37,9 +37,14 @@ private:
 	// Action Mapping
 	void StartJump();
 	void EndJump();
+	void StartSprint();
+	void StopSprint();
 
 	
 private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
+	bool bSprinting;
+
 	UPROPERTY(EditAnywhere, Category = Character)
 	float WalkSpeed;
 	
