@@ -20,12 +20,15 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
+	// ~ Begin ACharacter Interface
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;;
+	// ~ End ACharacter Interface
 
+	UFUNCTION(BlueprintCallable, Exec)
+	void SetWasTargeted(bool bTargeted);
 
 private:
 	// Axis Mapping
@@ -39,11 +42,20 @@ private:
 	void EndJump();
 	void StartSprint();
 	void StopSprint();
+	void ToggleLockOnTarget();
 
-	
+private:
+	void LockOnTarget();
+	void UpdateRotationToLockOnTarget(float DeltaTime);
+	bool CheckTargetIsValid(float DeltaTime);
+
+
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
-	bool bSprinting;
+	uint8 bSprinting : 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
+	uint8 bLockOnTarget: 1;
 
 	UPROPERTY(EditAnywhere, Category = Character)
 	float WalkSpeed;
@@ -57,6 +69,20 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = Component)
 	class UCameraComponent* MainCamera;
 
+	// {{ Later
+	//UPROPERTY(VisibleAnywhere, Category = Component)
+	//class URTargetPointComponent* TargetPointComponent;
+	// }} Later
+
+	// {{ For test
+	UPROPERTY(EditDefaultsOnly, Category = Test)
+	class UStaticMeshComponent* TargetPointComponent;
+	// }} For test
+
+	UPROPERTY()
+	class ARPlayerControllerBase* CachedPlayerController;
+
 	TWeakObjectPtr<class URCharacterAnimInstance> CharacterAnim;
 
+	TWeakObjectPtr<ARCharacter> LockOnCharacter;
 };

@@ -9,6 +9,10 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Character/RCharacterAnimInstance.h"
+#include "Character/Components/RTargetPointComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "DrawDebugHelpers.h"
+#include "Character/RPlayerControllerBase.h"
 
 // Sets default values
 ARCharacter::ARCharacter()
@@ -17,8 +21,11 @@ ARCharacter::ARCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 
 	bSprinting = false;
+	bLockOnTarget = false;
+
 	WalkSpeed = 300.f;
 	SprintSpeed = 800.f;
+	
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
@@ -29,6 +36,13 @@ ARCharacter::ARCharacter()
 
 	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	MainCamera->SetupAttachment(SpringArm);
+	
+	// Later
+	//TargetPointComponent = CreateDefaultSubobject<URTargetPointComponent>(TEXT("TargetPointComponent"));
+	
+	// Test
+	TargetPointComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetPointComponent"));
+	TargetPointComponent->SetupAttachment(RootComponent);
 
 }
 
@@ -43,12 +57,21 @@ void ARCharacter::BeginPlay()
 	{
 		CharacterAnim = NewAnim;
 	}
+
+	// Target Point Test 
+	TargetPointComponent->SetHiddenInGame(true);
+
 }
 
 // Called every frame
 void ARCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (CheckTargetIsValid(DeltaTime))
+	{
+		UpdateRotationToLockOnTarget(DeltaTime);
+	}
 
 }
 
@@ -68,6 +91,40 @@ void ARCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Released, this, &ARCharacter::EndJump);
 	PlayerInputComponent->BindAction(TEXT("Sprint"), EInputEvent::IE_Pressed, this, &ARCharacter::StartSprint);
 	PlayerInputComponent->BindAction(TEXT("Sprint"), EInputEvent::IE_Released, this, &ARCharacter::StopSprint);
+	PlayerInputComponent->BindAction(TEXT("LockOnTarget"), EInputEvent::IE_Released, this, &ARCharacter::ToggleLockOnTarget);
+
+}
+
+void ARCharacter::PossessedBy(AController * NewController)
+{
+	Super::PossessedBy(NewController);
+
+	ARPlayerControllerBase* NewPlayerController = Cast<ARPlayerControllerBase>(NewController);
+	if (NewPlayerController)
+	{
+		CachedPlayerController = NewPlayerController;
+	}
+
+}
+
+void ARCharacter::UnPossessed()
+{
+	CachedPlayerController = nullptr;
+
+	Super::UnPossessed();
+}
+
+void ARCharacter::SetWasTargeted(bool bTargeted)
+{
+	// {{ Test
+	if (!IsValid(TargetPointComponent))
+	{
+		return;
+	}
+
+	TargetPointComponent->SetHiddenInGame(!bTargeted);
+
+	// }} Test
 
 }
 
@@ -130,6 +187,28 @@ void ARCharacter::MoveRight(float AxisValue)
 
 void ARCharacter::Turn(float AxisValue)
 {
+	// If LockOnActor is valid, do nothing
+	if (LockOnCharacter.IsValid())
+	{
+		return;
+	}
+
+	// If character is falling, can not turn.
+	if (GetCharacterMovement())
+	{
+		if(GetCharacterMovement()->IsFalling() 
+			&& GetCharacterMovement()->bOrientRotationToMovement)
+		{ 
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+		}
+		else if (!GetCharacterMovement()->IsFalling()
+			&& !GetCharacterMovement()->bOrientRotationToMovement)
+		{
+			GetCharacterMovement()->bOrientRotationToMovement = true;
+		}
+	}
+	
+	// If value is zero, do nothing.
 	if (AxisValue == 0.f)
 	{
 		return;
@@ -140,6 +219,13 @@ void ARCharacter::Turn(float AxisValue)
 
 void ARCharacter::LookUp(float AxisValue)
 {
+	// If LockOnActor is valid, do nothing
+	if (LockOnCharacter.IsValid())
+	{
+		return;
+	}
+
+	// If value is zero, do nothing.
 	if (AxisValue == 0.f)
 	{
 		return;
@@ -182,3 +268,90 @@ void ARCharacter::StopSprint()
 
 }
 
+void ARCharacter::ToggleLockOnTarget()
+{
+	if (bLockOnTarget)
+	{
+		bLockOnTarget = false;
+		LockOnCharacter->SetWasTargeted(false);
+		LockOnCharacter.Reset();
+	}
+	else
+	{
+		LockOnTarget();
+	}
+
+}
+
+PRAGMA_DISABLE_OPTIMIZATION
+// Lock on target
+void ARCharacter::LockOnTarget()
+{
+	APlayerController* LocalPlayerController = GetGameInstance()->GetFirstLocalPlayerController();
+	if (!IsValid(LocalPlayerController))
+	{
+		return;
+	}
+
+	FVector CamLoc;
+	FRotator CamRot;
+	LocalPlayerController->GetPlayerViewPoint(CamLoc, CamRot);
+
+	const FVector TraceStart = CamLoc;
+	const FVector TraceEnd = TraceStart + CamRot.Vector() * 100000.f; // Magic number
+
+	FHitResult Hit;
+	FCollisionObjectQueryParams CollisionObjectQueryParams(ECC_Pawn);
+
+	FCollisionQueryParams CollisionQueryParams(false);
+	CollisionQueryParams.AddIgnoredActor(this);
+
+	const bool bResult = GWorld->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, CollisionObjectQueryParams, CollisionQueryParams);
+	if (!bResult)
+	{
+		return;
+	}
+
+	LockOnCharacter = Cast<ARCharacter>(Hit.Actor);
+	if (LockOnCharacter.IsValid())
+	{
+		bLockOnTarget = true;
+		LockOnCharacter->SetWasTargeted(true);
+	}
+
+}
+PRAGMA_ENABLE_OPTIMIZATION
+
+void ARCharacter::UpdateRotationToLockOnTarget(float DeltaTime)
+{
+	const FVector Dir = LockOnCharacter->GetActorLocation() - GetActorLocation();
+	if (CachedPlayerController)
+	{
+		FVector CamLoc;
+		FRotator CamRot;
+
+		CachedPlayerController->GetPlayerViewPoint(CamLoc, CamRot);
+		
+		FRotator RotationDelta;
+		RotationDelta = FMath::RInterpTo(CamRot, Dir.Rotation(), DeltaTime, 5.f);
+		CachedPlayerController->SetControlRotation(RotationDelta);
+	}
+	
+}
+
+bool ARCharacter::CheckTargetIsValid(float DeltaTime)
+{
+	if (!LockOnCharacter.IsValid())
+	{
+		return false;
+	}
+
+	float DistSq = FVector::DistSquared(LockOnCharacter->GetActorLocation(), GetActorLocation());
+	if (DistSq > 4000000.f && bLockOnTarget) // Magic Number
+	{
+		ToggleLockOnTarget();
+		return false;
+	}
+	
+	return true;
+}
