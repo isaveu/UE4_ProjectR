@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "RTargetPointComponent.generated.h"
 
+/* Foward Declaration */
+class ARCharacter;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTR_API URTargetPointComponent : public UActorComponent
@@ -19,6 +21,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	
 
 public:	
 	// Called every frame
@@ -28,6 +31,20 @@ public:
 	void SetOwnerTargeting(bool bTargeting);
 
 private:
+	void LockOnTarget();
+	void UpdateRotationToLockOnTarget(float DeltaTime);
+	bool CheckTargetIsValid();
+
+private:
+	UPROPERTY()
+	ARCharacter* CachedOwner;
+
+	UPROPERTY()
+	ARCharacter* LockOnCharacter;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Config)
+	float MaxDistanceLockOn;
+
 	UPROPERTY(EditDefaultsOnly, Category=TargetPoint)
 	class UStaticMesh* PointMesh;
 

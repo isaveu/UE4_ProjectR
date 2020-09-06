@@ -14,4 +14,34 @@ class PROJECTR_API ARPlayerCameraManager : public APlayerCameraManager
 {
 	GENERATED_BODY()
 	
+public:
+	APlayerCameraManager();
+
+public:
+	// ~ Begin APlayerCameraManager Interface
+	/**
+	 * Initialize this PlayerCameraManager for the given associated PlayerController.
+	 * @param PC	PlayerController associated with this Camera.
+	 */
+	virtual void InitializeFor(class APlayerController* PC) override;
+	/**
+	 * Performs per-tick camera update. Called once per tick after all other actors have been ticked.
+	 * Non-local players replicate the POV if bUseClientSideCameraUpdates is true.
+	 */
+	virtual void UpdateCamera(float DeltaTime) override;
+
+	// ~ End APlayerCameraManager Interface
+
+private:
+	void UpdateRotationToLockOnTarget(float DeltaTime);
+	bool CheckTargetIsValid();
+
+
+private:
+	UPROPERTY()
+	class ARPlayerControllerBase* CachedPlayerController;
+
+	UPROPERTY()
+	ARCharacter* LockOnCharacter;
+	
 };

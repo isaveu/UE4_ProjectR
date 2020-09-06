@@ -2,6 +2,7 @@
 
 
 #include "Character/Components/RTargetPointComponent.h"
+#include "Character/RCharacter.h"
 
 // Sets default values for this component's properties
 URTargetPointComponent::URTargetPointComponent()
@@ -33,7 +34,10 @@ void URTargetPointComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	if (CheckTargetIsValid())
+	{
+		UpdateRotationToLockOnTarget(DeltaTime);
+	}
 }
 
 void URTargetPointComponent::SetOwnerTargeting(bool bTargeting)
@@ -47,5 +51,31 @@ void URTargetPointComponent::SetOwnerTargeting(bool bTargeting)
 
 	}
 
+}
+
+void URTargetPointComponent::LockOnTarget()
+{
+}
+
+void URTargetPointComponent::UpdateRotationToLockOnTarget(float DeltaTime)
+{
+}
+
+bool URTargetPointComponent::CheckTargetIsValid()
+{
+	if (!IsValid(LockOnCharacter) || !IsValid(CachedOwner))
+	{
+		return false;
+	}
+
+	//float DistSq = FVector::DistSquared(LockOnCharacter->GetActorLocation(), CachedOwner->GetActorLocation());
+	//if (DistSq > FMath::Square(MaxDistanceLockOn) && bLockOnTarget) // Magic Number
+	//{
+	//	ToggleLockOnTarget();
+	//	return false;
+	//}
+
+
+	return true;
 }
 

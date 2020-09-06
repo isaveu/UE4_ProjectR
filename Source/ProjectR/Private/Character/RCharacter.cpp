@@ -68,7 +68,7 @@ void ARCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (CheckTargetIsValid(DeltaTime))
+	if (CheckLockOnTargetIsValid())
 	{
 		UpdateRotationToLockOnTarget(DeltaTime);
 	}
@@ -188,7 +188,7 @@ void ARCharacter::MoveRight(float AxisValue)
 void ARCharacter::Turn(float AxisValue)
 {
 	// If LockOnActor is valid, do nothing
-	if (LockOnCharacter.IsValid())
+	if (CheckLockOnTargetIsValid())
 	{
 		return;
 	}
@@ -220,7 +220,7 @@ void ARCharacter::Turn(float AxisValue)
 void ARCharacter::LookUp(float AxisValue)
 {
 	// If LockOnActor is valid, do nothing
-	if (LockOnCharacter.IsValid())
+	if (CheckLockOnTargetIsValid())
 	{
 		return;
 	}
@@ -303,7 +303,8 @@ void ARCharacter::LockOnTarget()
 	FHitResult Hit;
 	FCollisionObjectQueryParams CollisionObjectQueryParams(ECC_Pawn);
 
-	FCollisionQueryParams CollisionQueryParams(false);
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.bTraceComplex = false;
 	CollisionQueryParams.AddIgnoredActor(this);
 
 	const bool bResult = GWorld->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, CollisionObjectQueryParams, CollisionQueryParams);
@@ -339,7 +340,7 @@ void ARCharacter::UpdateRotationToLockOnTarget(float DeltaTime)
 	
 }
 
-bool ARCharacter::CheckTargetIsValid(float DeltaTime)
+bool ARCharacter::CheckLockOnTargetIsValid()
 {
 	if (!LockOnCharacter.IsValid())
 	{

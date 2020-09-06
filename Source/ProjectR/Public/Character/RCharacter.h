@@ -47,8 +47,8 @@ private:
 private:
 	void LockOnTarget();
 	void UpdateRotationToLockOnTarget(float DeltaTime);
-	bool CheckTargetIsValid(float DeltaTime);
-
+	bool CheckLockOnTargetIsValid();
+	
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
