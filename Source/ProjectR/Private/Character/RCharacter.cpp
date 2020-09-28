@@ -13,6 +13,7 @@
 #include "DrawDebugHelpers.h"
 #include "Character/RPlayerControllerBase.h"
 #include "HUD/RHUD.h"
+#include "RGameplayStatics.h"
 
 
 // Sets default values
@@ -45,9 +46,7 @@ ARCharacter::ARCharacter()
 	TargetPointComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetPointComponent"));
 	TargetPointComponent->SetupAttachment(RootComponent);
 
-	TargetRectangleWidth = 250.f;
-	TargetRectangleHeight = 150.f;
-
+	TargetCircleRadius = 250.f;
 	// }} Test
 
 }
@@ -305,36 +304,30 @@ void ARCharacter::LockOnTarget()
 		return;
 	}
 
-	// Get center position of screen & Check actors in rectangle on screen
-	AHUD* MyHUD = LocalPlayerController->GetHUD();
-	if (!IsValid(MyHUD))
-	{
-		return;
-	}
-
+	// Get center position of screen & Check actors in circle on screen
 	int32 Width, Height;
 	LocalPlayerController->GetViewportSize(Width, Height);
 
 	FVector2D ViewportCenter(Width / 2.f, Height / 2.f);
-	TArray<ARCharacter*> ActorsOnRectangle;
+	TArray<ARCharacter*> ActorsOnCircle;
 
-	bool bSuccess = MyHUD->GetActorsInSelectionRectangle<ARCharacter>(
-		FVector2D(ViewportCenter.X - (TargetRectangleWidth / 2.f), ViewportCenter.Y - (TargetRectangleHeight - 2.f)),
-		FVector2D(ViewportCenter.X + (TargetRectangleWidth / 2.f), ViewportCenter.Y + (TargetRectangleHeight - 2.f)),
-		ActorsOnRectangle);
-	if (!bSuccess || !ActorsOnRectangle.Num())
+	bool bSuccess = URGameplayStatics::GetActorsInCircleOnScreen<ARCharacter>(LocalPlayerController,
+		ViewportCenter, TargetCircleRadius, ActorsOnCircle);
+	if (!bSuccess || !ActorsOnCircle.Num())
 	{
 		return;
 	}
 
+	// Get closest actor to center of screen -> use dot product
 	ARCharacter* Closest = nullptr;
+	FVector MyLocation = GetActorLocation();
+
 	float DotResult = -1.f;
 	float CachedDotResult = -1.f;
-	FVector MyLocation = GetActorLocation();
-	// Get closest actor to center of screen -> use dot product
-	for (ARCharacter* InCharacter : ActorsOnRectangle)
+	
+	for (ARCharacter* InCharacter : ActorsOnCircle)
 	{
-		if (!IsValid(InCharacter))
+		if (!IsValid(InCharacter) || InCharacter == this)
 		{
 			continue;
 		}
@@ -347,30 +340,7 @@ void ARCharacter::LockOnTarget()
 		}
 	}
 
-
-	//// Raycast to target
-	//FVector CamLoc;
-	//FRotator CamRot;
-	//LocalPlayerController->GetPlayerViewPoint(CamLoc, CamRot);
-
-	//const FVector TraceStart = CamLoc;
-	//const FVector TraceEnd = TraceStart + CamRot.Vector() * 100000.f; // Magic number
-
-	//FHitResult Hit;
-	//FCollisionObjectQueryParams CollisionObjectQueryParams(ECC_Pawn);
-
-	//FCollisionQueryParams CollisionQueryParams;
-	//CollisionQueryParams.bTraceComplex = false;
-	//CollisionQueryParams.AddIgnoredActor(this);
-
-	//bSuccess = GWorld->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, CollisionObjectQueryParams, CollisionQueryParams);
-	//if (!bSuccess)
-	//{
-	//	return;
-	//}
-
 	// Cache locked on character
-	//LockOnCharacter = Cast<ARCharacter>(Hit.Actor);
 	LockOnCharacter = Closest;
 	if (LockOnCharacter.IsValid())
 	{
