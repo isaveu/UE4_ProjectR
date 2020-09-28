@@ -77,6 +77,13 @@ private:
 	// {{ For test
 	UPROPERTY(EditDefaultsOnly, Category = Test)
 	class UStaticMeshComponent* TargetPointComponent;
+
+	UPROPERTY(EditAnywhere, Category = Test)
+	float TargetRectangleWidth;
+
+	UPROPERTY(EditAnywhere, Category = Test)
+	float TargetRectangleHeight;
+
 	// }} For test
 
 	UPROPERTY()

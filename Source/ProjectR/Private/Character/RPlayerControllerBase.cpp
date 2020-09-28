@@ -3,9 +3,12 @@
 
 #include "Character/RPlayerControllerBase.h"
 #include "Character/RPlayerCameraManager.h"
+#include "HUD/RHUD.h"
 
 ARPlayerControllerBase::ARPlayerControllerBase()
 {
 	PlayerCameraManagerClass = ARPlayerCameraManager::StaticClass();
+
+
 
 }

@@ -2,17 +2,18 @@
 
 
 #include "Character/RCharacter.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "Character/Components/RCharacterMovementComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-#include "GameFramework/PlayerController.h"
 #include "Character/RCharacterAnimInstance.h"
 #include "Character/Components/RTargetPointComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Character/RPlayerControllerBase.h"
+#include "HUD/RHUD.h"
+
 
 // Sets default values
 ARCharacter::ARCharacter()
@@ -40,9 +41,14 @@ ARCharacter::ARCharacter()
 	// Later
 	//TargetPointComponent = CreateDefaultSubobject<URTargetPointComponent>(TEXT("TargetPointComponent"));
 	
-	// Test
+	// {{ Test
 	TargetPointComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetPointComponent"));
 	TargetPointComponent->SetupAttachment(RootComponent);
+
+	TargetRectangleWidth = 250.f;
+	TargetRectangleHeight = 150.f;
+
+	// }} Test
 
 }
 
@@ -283,45 +289,101 @@ void ARCharacter::ToggleLockOnTarget()
 
 }
 
-PRAGMA_DISABLE_OPTIMIZATION
 // Lock on target
 void ARCharacter::LockOnTarget()
 {
+	// Check is locally controlled
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	// Get local player controller
 	APlayerController* LocalPlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 	if (!IsValid(LocalPlayerController))
 	{
 		return;
 	}
 
-	FVector CamLoc;
-	FRotator CamRot;
-	LocalPlayerController->GetPlayerViewPoint(CamLoc, CamRot);
-
-	const FVector TraceStart = CamLoc;
-	const FVector TraceEnd = TraceStart + CamRot.Vector() * 100000.f; // Magic number
-
-	FHitResult Hit;
-	FCollisionObjectQueryParams CollisionObjectQueryParams(ECC_Pawn);
-
-	FCollisionQueryParams CollisionQueryParams;
-	CollisionQueryParams.bTraceComplex = false;
-	CollisionQueryParams.AddIgnoredActor(this);
-
-	const bool bResult = GWorld->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, CollisionObjectQueryParams, CollisionQueryParams);
-	if (!bResult)
+	// Get center position of screen & Check actors in rectangle on screen
+	AHUD* MyHUD = LocalPlayerController->GetHUD();
+	if (!IsValid(MyHUD))
 	{
 		return;
 	}
 
-	LockOnCharacter = Cast<ARCharacter>(Hit.Actor);
+	int32 Width, Height;
+	LocalPlayerController->GetViewportSize(Width, Height);
+
+	FVector2D ViewportCenter(Width / 2.f, Height / 2.f);
+	TArray<ARCharacter*> ActorsOnRectangle;
+
+	bool bSuccess = MyHUD->GetActorsInSelectionRectangle<ARCharacter>(
+		FVector2D(ViewportCenter.X - (TargetRectangleWidth / 2.f), ViewportCenter.Y - (TargetRectangleHeight - 2.f)),
+		FVector2D(ViewportCenter.X + (TargetRectangleWidth / 2.f), ViewportCenter.Y + (TargetRectangleHeight - 2.f)),
+		ActorsOnRectangle);
+	if (!bSuccess || !ActorsOnRectangle.Num())
+	{
+		return;
+	}
+
+	ARCharacter* Closest = nullptr;
+	float DotResult = -1.f;
+	float CachedDotResult = -1.f;
+	FVector MyLocation = GetActorLocation();
+	// Get closest actor to center of screen -> use dot product
+	for (ARCharacter* InCharacter : ActorsOnRectangle)
+	{
+		if (!IsValid(InCharacter))
+		{
+			continue;
+		}
+
+		DotResult = FVector::DotProduct(MyLocation, InCharacter->GetActorLocation());
+		if (DotResult > CachedDotResult)
+		{
+			CachedDotResult = DotResult;
+			Closest = InCharacter;
+		}
+	}
+
+
+	//// Raycast to target
+	//FVector CamLoc;
+	//FRotator CamRot;
+	//LocalPlayerController->GetPlayerViewPoint(CamLoc, CamRot);
+
+	//const FVector TraceStart = CamLoc;
+	//const FVector TraceEnd = TraceStart + CamRot.Vector() * 100000.f; // Magic number
+
+	//FHitResult Hit;
+	//FCollisionObjectQueryParams CollisionObjectQueryParams(ECC_Pawn);
+
+	//FCollisionQueryParams CollisionQueryParams;
+	//CollisionQueryParams.bTraceComplex = false;
+	//CollisionQueryParams.AddIgnoredActor(this);
+
+	//bSuccess = GWorld->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, CollisionObjectQueryParams, CollisionQueryParams);
+	//if (!bSuccess)
+	//{
+	//	return;
+	//}
+
+	// Cache locked on character
+	//LockOnCharacter = Cast<ARCharacter>(Hit.Actor);
+	LockOnCharacter = Closest;
 	if (LockOnCharacter.IsValid())
 	{
 		bLockOnTarget = true;
 		LockOnCharacter->SetWasTargeted(true);
 	}
+	else
+	{
+		bLockOnTarget = false;
+	}
+
 
 }
-PRAGMA_ENABLE_OPTIMIZATION
 
 void ARCharacter::UpdateRotationToLockOnTarget(float DeltaTime)
 {

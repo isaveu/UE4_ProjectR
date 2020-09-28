@@ -17,5 +17,6 @@ class PROJECTR_API ARPlayerControllerBase : public APlayerController
 public:
 	ARPlayerControllerBase();
 
+	
 
 };
