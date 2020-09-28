@@ -4,13 +4,13 @@
 #include "Character/RPlayerCameraManager.h"
 #include "Character/RPlayerControllerBase.h"
 
-ARPlayerCameraManager::APlayerCameraManager()
+ARPlayerCameraManager::ARPlayerCameraManager()
 {
 }
 
 void ARPlayerCameraManager::InitializeFor(APlayerController * PC)
 {
-	Super.InitializeFor(PC);
+	Super::InitializeFor(PC);
 
 	ARPlayerControllerBase* NewPC = Cast<ARPlayerControllerBase>(PC);
 	if (NewPC)
@@ -28,9 +28,4 @@ void ARPlayerCameraManager::UpdateCamera(float DeltaTime)
 
 void ARPlayerCameraManager::UpdateRotationToLockOnTarget(float DeltaTime)
 {
-}
-
-bool ARPlayerCameraManager::CheckTargetIsValid()
-{
-	return false;
 }

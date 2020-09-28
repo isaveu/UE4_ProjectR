@@ -15,10 +15,11 @@ class PROJECTR_API ARPlayerCameraManager : public APlayerCameraManager
 	GENERATED_BODY()
 	
 public:
-	APlayerCameraManager();
+	ARPlayerCameraManager();
 
 public:
 	// ~ Begin APlayerCameraManager Interface
+
 	/**
 	 * Initialize this PlayerCameraManager for the given associated PlayerController.
 	 * @param PC	PlayerController associated with this Camera.
@@ -34,14 +35,10 @@ public:
 
 private:
 	void UpdateRotationToLockOnTarget(float DeltaTime);
-	bool CheckTargetIsValid();
-
 
 private:
 	UPROPERTY()
 	class ARPlayerControllerBase* CachedPlayerController;
 
-	UPROPERTY()
-	ARCharacter* LockOnCharacter;
 	
 };
